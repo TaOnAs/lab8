@@ -155,7 +155,7 @@ def containers_create():
 
     try:
         publish = body['publish']
-        arags = args + ('-p', publish)
+        args = args + ('-p', publish)
     except
     pass
 
