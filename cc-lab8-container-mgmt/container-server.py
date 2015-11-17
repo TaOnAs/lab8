@@ -11,25 +11,19 @@ app = Flask(__name__)
 def index():
     return """
 Available API endpoints:
-
 GET /containers                     List all containers
 GET /containers?state=running      List running containers (only)
 GET /containers/<id>                Inspect a specific container
 GET /containers/<id>/logs           Dump specific container logs
 GET /images                         List all images
-
-
 POST /images                        Create a new image
 POST /containers                    Create a new container
-
 PATCH /containers/<id>              Change a container's state
 PATCH /images/<id>                  Change a specific image's attributes
-
 DELETE /containers/<id>             Delete a specific container
 DELETE /containers                  Delete all containers (including running)
 DELETE /images/<id>                 Delete a specific image
 DELETE /images                      Delete all images
-
 """
 
 @app.route('/containers', methods=['GET'])
@@ -39,7 +33,6 @@ def containers_index():
  
     curl -s -X GET -H 'Accept: application/json' http://localhost:8080/containers | python -mjson.tool
     curl -s -X GET -H 'Accept: application/json' http://localhost:8080/containers?state=running | python -mjson.tool
-
     """
     
     if request.args.get('state') == 'running':
@@ -68,7 +61,6 @@ def images_index():
 def containers_show(id):
     """
     Inspect specific container
-
     curl -s -X GET -H 'Accept: application/json' http://localhost:8080/containers/<id> | python -mjson.tool
     """
     output = docker('inspect', id)
@@ -81,9 +73,7 @@ def containers_log(id):
     """
     Dump specific container log
     curl -s -X GET -H 'Accept: application/json' http://localhost:8080/containers/<id>/logs | python -mjson.tool
-
     
-
 """
     output = docker('logs', '-f',  id)
 	
@@ -108,7 +98,9 @@ def containers_remove(id):
     curl -s -X DELETE -H 'Accept: application/json' http://localhost:8080/containers/<id> | python -mjson.tool
     """
     if request.args.get('state') != 'running':
-	docker ('rm', id)
+	   docker('stop')
+
+    docker ('rm', id)
    
     resp = '{"id": "%s"}' % id
     return Response(response=resp, mimetype="application/json")
@@ -122,7 +114,7 @@ def containers_remove_all():
 
     containers = docker_ps_to_array(docker('ps','-a'))
     for i in containers
-        docker('rm', i['id'])
+        docker('rm', '-f', i['id'])
     resp = '{"count": %id}' %len(containers)
     return Response(response=resp, mimetype="application/json")
 
@@ -130,11 +122,10 @@ def containers_remove_all():
 def images_remove_all():
     """
     Force remove all images - dangrous!
-
     """
     images = docker_images_to_array(docker('images'))
     for i in images
-        docker('rmi', i['id'])
+        docker('rmi', '-f', i['id'])
     resp = '{"count: %d"}' %len(images)
     return Response(response=resp, mimetype="application/json")
 
@@ -143,11 +134,9 @@ def images_remove_all():
 def containers_create():
     """
     Create container (from existing image using id or name)
-
     curl -X POST -H 'Content-Type: application/json' http://localhost:8080/containers -d '{"image": "my-app"}'
     curl -X POST -H 'Content-Type: application/json' http://localhost:8080/containers -d '{"image": "b14752a6590e"}'
     curl -X POST -H 'Content-Type: application/json' http://localhost:8080/containers -d '{"image": "b14752a6590e","publish":"8081:22"}'
-
     """
     body = request.get_json(force=True)
     image = body['image']
@@ -167,13 +156,14 @@ def containers_create():
 def images_create():
     """
     Create image (from uploaded Dockerfile)
-
     curl -H 'Accept: application/json' -F file=@Dockerfile http://localhost:8080/images
-
     """
+    body = request.get.json(force=True)
     dockerfile = request.files['file']
+
+    docker('build', '--rm=True', '-f', 'Dockerfile','.')
     
-    resp = ''
+    resp = 'Image created'
     return Response(response=resp, mimetype="application/json")
 
 
@@ -183,10 +173,8 @@ def images_create():
 def containers_update(id):
     """
     Update container attributes (support: state=running|stopped)
-
     curl -X PATCH -H 'Content-Type: application/json' http://localhost:8080/containers/b6cd8ea512c8 -d '{"state": "running"}'
     curl -X PATCH -H 'Content-Type: application/json' http://localhost:8080/containers/b6cd8ea512c8 -d '{"state": "stopped"}'
-
     """
     body = request.get_json(force=True)
     try:
@@ -205,9 +193,7 @@ def containers_update(id):
 def images_update(id):
     """
     Update image attributes (support: name[:tag])  tag name should be lowercase only
-
     curl -s -X PATCH -H 'Content-Type: application/json' http://localhost:8080/images/7f2619ed1768 -d '{"tag": "test:1.0"}'
-
     """
     body = request.get_json(force=True)
     name = body['tag']
