@@ -15,7 +15,7 @@ def main():
 	print "\n"
 
 	print "Inspect a container\n"
-	call(["curl", "-s","-X GET","-H 'Accept:application/json'","localhost:8080/containers/4a5bcb4508db])
+	call(["curl", "-s","-X GET","-H 'Accept:application/json'","localhost:8080/containers/4a5bcb4508db"])
 	print "\n"
 
 	print "Deleting a container\n"
